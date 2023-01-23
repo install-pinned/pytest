@@ -1,0 +1,55 @@
+
+name: "update pins"
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '25 4,16 * * *'
+
+jobs:
+  update_pins:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        py: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: main
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.py }}
+      - run: pip install pip-tools==6.12.1
+      - run: mkdir new-pins
+      - run: pip-compile --upgrade --allow-unsafe --generate-hashes pins/requirements.in -o new-pins/requirements-${{ matrix.py }}-${{ runner.os }}.txt 
+      - uses: actions/upload-artifact@v3
+        with:
+          name: requirements
+          path: new-pins/
+
+  update_repo:
+    needs: update_pins
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: main
+      - run: rm pins/requirements-*.txt
+      - uses: actions/download-artifact@v3
+        with:
+          name: requirements
+          path: pins/
+      - id: commit
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git config --global user.name "install-pinned bot"
+            git config --global user.email "install-pinned@users.noreply.github.com"
+            git add --all
+            ver=$(curl -Ls https://pypi.org/pypi/pytest/json | jq -r .info.version)
+            git commit -m "update pins (pytest $ver)"
+            commit=$(git rev-parse HEAD)
+            sed -i -E "s/@[0-9a-f]{40}.*/@$commit  # $ver/g" README.md
+            git commit -am "update README.md (pytest $ver)"
+            git push
+          fi
