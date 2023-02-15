@@ -20,7 +20,7 @@ In your GitHub Actions workflow, use this action like so:
 
 ```yaml
       - name: Install pytest from PyPI
-        uses: install-pinned/pytest@ce3d16024a649cea3c461188602348c402cbb9fa  # 7.2.1
+        uses: install-pinned/pytest@6a2a40eaa2e6e8b337d7169a6a6575af3ee2c449  # 7.2.1
 ```
 
 You can [set up Dependabot](https://docs.github.com/en/code-security/dependabot/working-with-dependabot/keeping-your-actions-up-to-date-with-dependabot#example-dependabotyml-file-for-github-actions)
